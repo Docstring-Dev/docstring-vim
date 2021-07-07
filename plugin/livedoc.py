@@ -17,18 +17,14 @@ if (sys.version_info < (3, 6)):
     sys.exit(1)
 
 
-DOC_POSITION_ADJUSTMENT = {
-    "BEFORE": 0,
-    "AFTER": 1,
-}
-
-
 API_HOST = 'https://app.livedoc.ai'
 if 'LIVEDOC_DEV' in os.environ:
     API_HOST = 'http://localhost:4000'
 
 API_ENDPOINT = API_HOST + '/api/integrations/vscode'
 API_KEY = vim.eval('g:livedoc_api_key')
+
+DOC_BEFORE = "BEFORE"
 
 
 def verbose():
@@ -125,10 +121,29 @@ def docgen_cb():
         templateLength = len(template.split("\n"))
 
         for i, scope in enumerate(scopes):
-            scopeStart = scope['range']['start']['line']
-            scopeEnd = scope['range']['end']['line']
-            docsStart = (scopeStart + DOC_POSITION_ADJUSTMENT[position]) - 1;
+            # -1 because vim line numbers are 0-indexed, but we get 1-indexed from API
+            scopeStart = scope['range']['start']['line'] - 1
+            scopeBodyStart = scope['range']['body_start']['line'] - 1
+            scopeEnd = scope['range']['end']['line'] - 1
+
             previousTemplateadjustment = templateLength * i;
+
+            whitespace = ''
+
+            # docsStart is the line number _before_ which the doc should be added
+            # meaning the docs will then be on that line
+            if position == DOC_BEFORE:
+                docsStart = scopeStart
+                whitespace = re.match(r'\s*', vim.current.buffer[scopeStart+previousTemplateadjustment]).group()
+            else:
+                docsStart = scopeBodyStart
+
+                # indent to the indentation of the first, non-empty line in the body of the scope
+                for line in vim.current.buffer[scopeBodyStart+previousTemplateadjustment:scopeEnd+previousTemplateadjustment+1]:
+                    if line.strip() != '':
+                        whitespace = re.match(r'\s*', line).group()
+                        break
+
             scopesByDocStart[docsStart] = {
                 'scope': scope,
                 'scopesAfter': [],
@@ -137,20 +152,19 @@ def docgen_cb():
                 'adjustedDocEnd': docsStart + 4,
             }
 
-            # indent to the indentation of the first, non-empty line in the scope
-            whitespace = ''
-            for line in vim.current.buffer[scopeStart+previousTemplateadjustment:scopeEnd+previousTemplateadjustment]:
-                if line.strip() != '':
-                    whitespace = re.match(r'\s*', line).group()
-                    break
-
             tabAdjustedTemplate = map(lambda line: whitespace + line, template.split("\n"))
+
             vim.current.buffer.append(list(tabAdjustedTemplate), docsStart + previousTemplateadjustment)
 
             for j in range(len(scopes) - 1, i, -1):
                 scopeAfter = scopes[j]
-                scopeAfterStart = (scopeAfter['range']['start']['line'] + DOC_POSITION_ADJUSTMENT[position]) - 1
-                scopesByDocStart[docsStart]["scopesAfter"].append(scopeAfterStart)
+                scopeAfterStart = scopeAfter['range']['start']['line'] - 1
+                scopeAfterBodyStart = scopeAfter['range']['body_start']['line'] - 1
+                if position == DOC_BEFORE:
+                    scopeAfterDocsStart = scopeAfterStart
+                else:
+                    scopeAfterDocsStart = scopeAfterBodyStart
+                scopesByDocStart[docsStart]["scopesAfter"].append(scopeAfterDocsStart)
 
         for thing in scopesByDocStart.values():
             for scopeLine in thing['scopesAfter']:
@@ -171,15 +185,21 @@ def docgen_cb():
 
         payloadScope = data['scope']
 
-        docsStart = (payloadScope['range']['start']['line'] + DOC_POSITION_ADJUSTMENT[position]) - 1;
+        scopeStart = payloadScope['range']['start']['line'] - 1
+        scopeBodyStart = payloadScope['range']['body_start']['line'] - 1
 
-        scope = scopesByDocStart[docsStart];
-        docsEndLine = scope["adjustedDocEnd"];
+        if position == DOC_BEFORE:
+            docsStart = scopeStart
+        else:
+            docsStart = scopeBodyStart
+
+        scope = scopesByDocStart[docsStart]
+        docsEndLine = scope["adjustedDocEnd"]
 
         if data['type'] == "@overview":
-            insertPosition = scope["adjustedDetailsStart"] - 1;
+            insertPosition = scope["adjustedDetailsStart"] - 1
         else:
-            insertPosition = docsEndLine - 1;
+            insertPosition = docsEndLine - 1
 
         if data['text'] == '\n':
             return
