@@ -1,3 +1,4 @@
+#@livedoc
 import json
 import logging
 import os
@@ -31,10 +32,20 @@ API_KEY = vim.eval('g:livedoc_api_key')
 
 
 def verbose():
+    """
+    @startdoc
+    Determines if verbose logs should be emitted
+    @end
+    """
     return bool(int(vim.eval('get(g:, "livedoc_verbose", 0)')))
 
 
 def persist():
+    """
+    @startdoc
+    Persists the contents of the current buffer to Livedoc
+    @end
+    """
     contents = '\n'.join(vim.current.buffer)
 
     cur_file = vim.current.buffer.name
@@ -78,6 +89,7 @@ def persist():
         endpoint = API_ENDPOINT + '/docs/persist'
 
     req = urllib.request.Request(endpoint)
+    req.add_header('User-Agent', 'livedoc-vim/0.1 (https://github.com/Whize-Co/livedoc-vim)')
     req.add_header('authorization', f'Bearer {API_KEY}')
     req.add_header('content-type', 'application/json')
     req.add_header('content-length', str(len(post_data)))
@@ -97,6 +109,12 @@ async_state = {}
 
 
 def docgen_cb():
+    """
+    @startdoc
+    Callback handler for async document generation.
+    Called each time a line from livedoc_proxy.py is received by vim.
+    @end
+    """
     payload = json.loads(vim.eval("a:msg"))
     if payload['type'] == 'init':
         scopes = payload['data']['scopes']

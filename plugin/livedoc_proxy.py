@@ -13,8 +13,8 @@ from realtime_py.connection import Socket
 from common import get_repo_root, get_current_branch, is_file_tracked
 
 
-API_ENDPOINT = 'https://livedoc.ai/api/integrations/vscode/docs/create_async'
-WS_ENDPOINT = 'wss://livedoc.ai/socket/websocket'
+API_ENDPOINT = 'https://app.livedoc.ai/api/integrations/vscode/docs/create_async'
+WS_ENDPOINT = 'wss://app.livedoc.ai/socket/websocket'
 if 'LIVEDOC_DEV' in os.environ:
     API_ENDPOINT = 'http://localhost:4000/api/integrations/vscode/docs/create_async'
     WS_ENDPOINT = 'ws://localhost:4000/socket/websocket'
@@ -68,6 +68,7 @@ if __name__ == "__main__":
     }).encode('utf-8')
 
     req = urllib.request.Request(API_ENDPOINT)
+    req.add_header('User-Agent', 'livedoc-vim/0.1 (https://github.com/Whize-Co/livedoc-vim)')
     req.add_header('authorization', f'Bearer {API_KEY}')
     req.add_header('content-type', 'application/json')
     req.add_header('content-length', str(len(post_data)))
