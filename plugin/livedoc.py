@@ -122,8 +122,6 @@ def docgen_cb():
 
         for i, scope in enumerate(scopes):
             # -1 because vim line numbers are 0-indexed, but we get 1-indexed from API
-            scopeStart = scope['range']['start']['line'] - 1
-            scopeBodyStart = scope['range']['body_start']['line'] - 1
             scopeEnd = scope['range']['end']['line'] - 1
 
             previousTemplateadjustment = templateLength * i;
@@ -133,9 +131,11 @@ def docgen_cb():
             # docsStart is the line number _before_ which the doc should be added
             # meaning the docs will then be on that line
             if position == DOC_BEFORE:
+                scopeStart = scope['range']['start']['line'] - 1
                 docsStart = scopeStart
                 whitespace = re.match(r'\s*', vim.current.buffer[scopeStart+previousTemplateadjustment]).group()
             else:
+                scopeBodyStart = scope['range']['body_start']['line'] - 1
                 docsStart = scopeBodyStart
 
                 # indent to the indentation of the first, non-empty line in the body of the scope
@@ -158,12 +158,10 @@ def docgen_cb():
 
             for j in range(len(scopes) - 1, i, -1):
                 scopeAfter = scopes[j]
-                scopeAfterStart = scopeAfter['range']['start']['line'] - 1
-                scopeAfterBodyStart = scopeAfter['range']['body_start']['line'] - 1
                 if position == DOC_BEFORE:
-                    scopeAfterDocsStart = scopeAfterStart
+                    scopeAfterDocsStart = scopeAfter['range']['start']['line'] - 1
                 else:
-                    scopeAfterDocsStart = scopeAfterBodyStart
+                    scopeAfterDocsStart = scopeAfter['range']['body_start']['line'] - 1
                 scopesByDocStart[docsStart]["scopesAfter"].append(scopeAfterDocsStart)
 
         for thing in scopesByDocStart.values():
@@ -185,13 +183,10 @@ def docgen_cb():
 
         payloadScope = data['scope']
 
-        scopeStart = payloadScope['range']['start']['line'] - 1
-        scopeBodyStart = payloadScope['range']['body_start']['line'] - 1
-
         if position == DOC_BEFORE:
-            docsStart = scopeStart
+            docsStart = payloadScope['range']['start']['line'] - 1
         else:
-            docsStart = scopeBodyStart
+            docsStart = payloadScope['range']['body_start']['line'] - 1
 
         scope = scopesByDocStart[docsStart]
         docsEndLine = scope["adjustedDocEnd"]
