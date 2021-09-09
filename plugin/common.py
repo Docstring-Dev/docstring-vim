@@ -1,4 +1,4 @@
-#@livedoc
+#@docstring
 from typing import List, Optional
 
 import logging

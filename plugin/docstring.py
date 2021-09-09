@@ -1,4 +1,4 @@
-#@livedoc
+#@docstring
 import json
 import logging
 import os
@@ -17,12 +17,12 @@ if (sys.version_info < (3, 6)):
     sys.exit(1)
 
 
-API_HOST = 'https://app.livedoc.ai'
-if 'LIVEDOC_DEV' in os.environ:
+API_HOST = 'https://app.docstring.dev'
+if 'DOCSTRING_DEV' in os.environ:
     API_HOST = 'http://localhost:4000'
 
 API_ENDPOINT = API_HOST + '/api/integrations/vscode'
-API_KEY = vim.eval('g:livedoc_api_key')
+API_KEY = vim.eval('g:docstring_api_key')
 
 DOC_BEFORE = "BEFORE"
 
@@ -33,13 +33,13 @@ def verbose():
     Determines if verbose logs should be emitted
     @end
     """
-    return bool(int(vim.eval('get(g:, "livedoc_verbose", 0)')))
+    return bool(int(vim.eval('get(g:, "docstring_verbose", 0)')))
 
 
 def persist():
     """
     @startdoc
-    Persists the contents of the current buffer to Livedoc
+    Persists the contents of the current buffer to Docstring
     @end
     """
     contents = '\n'.join(vim.current.buffer)
@@ -53,7 +53,7 @@ def persist():
 
     if repo_root is None:
         if verbose():
-            print(f'Livedoc: Not persisting file {cur_file}: not in a git repository')
+            print(f'Docstring: Not persisting file {cur_file}: not in a git repository')
         return
 
     relative_file = pathlib.Path(cur_file).relative_to(repo_root)
@@ -61,14 +61,14 @@ def persist():
     #repo_origin = get_origin_url(str(repo_root))
     repo = repo_root.name
 
-    if relative_file.name.lower() != 'readme.md' and '@livedoc' not in contents:
+    if relative_file.name.lower() != 'readme.md' and '@docstring' not in contents:
         if verbose():
-            print(f'Livedoc: Not persisting file {relative_file}: "@livedoc" not in file')
+            print(f'Docstring: Not persisting file {relative_file}: "@docstring" not in file')
         return
 
     if not is_file_tracked(str(repo_root), str(relative_file)):
         if verbose():
-            print(f'Livedoc: Not persisting file {relative_file}: not tracked by git')
+            print(f'Docstring: Not persisting file {relative_file}: not tracked by git')
         return
 
     post_data = json.dumps({
@@ -85,7 +85,7 @@ def persist():
         endpoint = API_ENDPOINT + '/docs/persist'
 
     req = urllib.request.Request(endpoint)
-    req.add_header('User-Agent', 'livedoc-vim/0.1 (https://github.com/Whize-Co/livedoc-vim)')
+    req.add_header('User-Agent', 'docstring-vim/0.1 (https://github.com/Whize-Co/docstring-vim)')
     req.add_header('authorization', f'Bearer {API_KEY}')
     req.add_header('content-type', 'application/json')
     req.add_header('content-length', str(len(post_data)))
@@ -95,7 +95,7 @@ def persist():
         urllib.request.urlopen(req, post_data, timeout=5)
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8")
-        print(f'Livedoc: Error saving: {body}')
+        print(f'Docstring: Error saving: {body}')
         return
     except urllib.error.URLError as e:
         return
@@ -108,7 +108,7 @@ def docgen_cb():
     """
     @startdoc
     Callback handler for async document generation.
-    Called each time a line from livedoc_proxy.py is received by vim.
+    Called each time a line from docstring_proxy.py is received by vim.
     @end
     """
     payload = json.loads(vim.eval("a:msg"))

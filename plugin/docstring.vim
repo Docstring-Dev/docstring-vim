@@ -1,16 +1,16 @@
 " Prevent loading the plugin multiple times
-if exists('g:livedoc_loaded')
+if exists('g:docstring_loaded')
     finish
 endif
-let g:livedoc_loaded = 1
+let g:docstring_loaded = 1
 
 if !has("python3")
     echo "vim has to be compiled with +python3 to run this"
     finish
 endif
 
-if !exists('g:livedoc_api_key')
-    echo "No Livedoc API key set"
+if !exists('g:docstring_api_key')
+    echo "No Docstring API key set"
     finish
 endif
 
@@ -21,29 +21,29 @@ import sys
 import vim
 plugin_root_dir = vim.eval('s:plugin_root_dir')
 sys.path.insert(0, plugin_root_dir)
-import livedoc
+import docstring
 EOF
 
 function s:docgen_cb(channel, msg)
-    python3 livedoc.docgen_cb()
+    python3 docstring.docgen_cb()
 endfunction
 
-function! UpdateLivedoc()
-    let job = job_start(["/usr/bin/python3", s:plugin_root_dir . "/livedoc_proxy.py", expand('%:p')], {
+function! UpdateDocstring()
+    let job = job_start(["/usr/bin/python3", s:plugin_root_dir . "/docstring_proxy.py", expand('%:p')], {
                 \ 'in_io': 'buffer',
                 \ 'in_buf': bufnr('%'),
                 \ 'out_cb': function('s:docgen_cb'),
-                \ 'env': {'API_KEY': g:livedoc_api_key}
+                \ 'env': {'API_KEY': g:docstring_api_key}
                 \ })
 endfunction
 
-command! -nargs=0 UpdateLivedoc call UpdateLivedoc()
+command! -nargs=0 UpdateDocstring call UpdateDocstring()
 
 
-function! SaveLivedoc()
-    python3 livedoc.persist()
+function! SaveDocstring()
+    python3 docstring.persist()
 endfunction
 
-command! -nargs=0 SaveLivedoc call SaveLivedoc()
+command! -nargs=0 SaveDocstring call SaveDocstring()
 
-autocmd BufWritePost * SaveLivedoc
+autocmd BufWritePost * SaveDocstring
