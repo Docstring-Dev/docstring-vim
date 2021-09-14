@@ -68,7 +68,7 @@ if __name__ == "__main__":
     }).encode('utf-8')
 
     req = urllib.request.Request(API_ENDPOINT)
-    req.add_header('User-Agent', 'docstring-vim/0.1 (https://github.com/Whize-Co/docstring-vim)')
+    req.add_header('User-Agent', 'docstring-vim/0.1 (https://github.com/Docstring-Dev/docstring-vim)')
     req.add_header('authorization', f'Bearer {API_KEY}')
     req.add_header('content-type', 'application/json')
     req.add_header('content-length', str(len(post_data)))

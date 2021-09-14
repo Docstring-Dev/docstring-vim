@@ -29,7 +29,7 @@ function s:docgen_cb(channel, msg)
 endfunction
 
 function! UpdateDocstring()
-    let job = job_start(["/usr/bin/python3", s:plugin_root_dir . "/docstring_proxy.py", expand('%:p')], {
+    let job = job_start(["timeout", "30s", "/usr/bin/python3", s:plugin_root_dir . "/docstring_proxy.py", expand('%:p')], {
                 \ 'in_io': 'buffer',
                 \ 'in_buf': bufnr('%'),
                 \ 'out_cb': function('s:docgen_cb'),
